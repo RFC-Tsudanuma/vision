@@ -1,0 +1,2 @@
+*.onnx
+model/checkpoint_best_ema.pth
