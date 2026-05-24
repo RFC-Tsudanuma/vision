@@ -15,6 +15,7 @@ struct DetectionRes {
     int class_id;
     std::string class_name;
     float confidence;
+    std::string color;
 };
 
 struct SegmentationRes {

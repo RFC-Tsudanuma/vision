@@ -31,6 +31,7 @@ trtexec \
   --onnx="$ONNX_PATH" \
   --saveEngine="$ENGINE_PATH" \
   --fp16 \
+  --builderOptimizationLevel=5 \
   --memPoolSize=workspace:${WORKSPACE_MB} \
   --verbose \
   --useCudaGraph

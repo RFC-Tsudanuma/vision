@@ -48,7 +48,7 @@ detection_model:
   confidence_threshold: 0.2
   nms_threshold: 0.4
   use_cuda_graph: true
-  classnames: [Ball, Goalpost, K1, LCross, TCross, XCross, PenaltyPoint]
+  classnames: [Ball, Goalpost, K1, LCross, PenaltyPoint, TCross, XCross, Red, Blue]
   post_process:
     single_ball_assumption: false
     confidence_thresholds:
@@ -56,9 +56,11 @@ detection_model:
       Goalpost: 0.4
       K1: 0.4
       LCross: 0.3
+      PenaltyPoint: 0.3
       TCross: 0.3
       XCross: 0.3
-      PenaltyPoint: 0.3
+      Red: 0.3
+      Blue: 0.3
 
 use_depth: false
 
