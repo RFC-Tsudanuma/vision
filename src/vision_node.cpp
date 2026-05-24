@@ -391,6 +391,41 @@ void VisionNode::ProcessData(SyncedDataBlock &synced_data, vision_interface::msg
         filtered_detections = detections;
     }
 
+    // Assign team color (red/blue) to K1 detections by matching bib detections.
+    {
+        std::vector<booster_vision::DetectionRes> color_dets;
+        std::vector<booster_vision::DetectionRes> remaining;
+        for (auto &d : filtered_detections) {
+            if (d.class_id >= 0 && d.class_id < static_cast<int>(classnames_.size())) {
+                d.class_name = classnames_[d.class_id];
+            }
+            if (d.class_name == "Red" || d.class_name == "Blue") {
+                color_dets.push_back(d);
+            } else {
+                remaining.push_back(d);
+            }
+        }
+        for (auto &det : remaining) {
+            if (det.class_name != "K1") continue;
+            float best_conf = -1.f;
+            std::string best_color;
+            for (const auto &cd : color_dets) {
+                int cx = cd.bbox.x + cd.bbox.width / 2;
+                int cy = cd.bbox.y + cd.bbox.height / 2;
+                if (det.bbox.contains(cv::Point(cx, cy))) {
+                    if (cd.confidence > best_conf) {
+                        best_conf = cd.confidence;
+                        best_color = (cd.class_name == "Red") ? "red" : "blue";
+                    }
+                }
+            }
+            if (best_conf >= 0.f) {
+                det.color = best_color;
+            }
+        }
+        filtered_detections = remaining;
+    }
+
     std::vector<booster_vision::DetectionRes> detections_for_display;
     for (auto &detection : filtered_detections) {
         vision_interface::msg::DetectedObject detection_obj;
@@ -425,11 +460,11 @@ void VisionNode::ProcessData(SyncedDataBlock &synced_data, vision_interface::msg
         detection_obj.ymax = detection.bbox.y + detection.bbox.height;
         detection_obj.label = detection.class_name;
 
-        if ((color_classifier_ != nullptr) && (detection.class_name == "Opponent")) {
-            // get a crop of the image given detection.bbox
+        if (!detection.color.empty()) {
+            detection_obj.color = detection.color;
+        } else if ((color_classifier_ != nullptr) && (detection.class_name == "Opponent")) {
             cv::Mat crop = color(detection.bbox);
             std::string robot_color_str = color_classifier_->Classify(crop);
-            // add robot color to detection_obj
             detection_obj.color = robot_color_str;
         }
 
