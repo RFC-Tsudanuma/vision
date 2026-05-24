@@ -2,14 +2,20 @@
 if (CMAKE_SYSTEM_PROCESSOR MATCHES "aarch64")
   include_directories(/usr/local/cuda/targets/aarch64-linux/include)
   link_directories(/usr/local/cuda/targets/aarch64-linux/lib)
+  if(EXISTS /usr/include/aarch64-linux-gnu/NvInferVersion.h)
+    include_directories(/usr/include/aarch64-linux-gnu)
+    link_directories(/usr/lib/aarch64-linux-gnu)
+  endif()
 else()
-  # cuda
   include_directories(/usr/local/cuda/include)
   link_directories(/usr/local/cuda/lib64)
-
-  # tensorrt
-  include_directories(/usr/local/TensorRT-8.6.1.6/include)
-  link_directories(/usr/local/TensorRT-8.6.1.6/lib)
+  if(EXISTS /usr/include/x86_64-linux-gnu/NvInferVersion.h)
+    include_directories(/usr/include/x86_64-linux-gnu)
+    link_directories(/usr/lib/x86_64-linux-gnu)
+  else()
+    include_directories(/usr/local/TensorRT-8.6.1.6/include)
+    link_directories(/usr/local/TensorRT-8.6.1.6/lib)
+  endif()
 endif()
 
 add_subdirectory(trt)

@@ -1,0 +1,96 @@
+# Booster K1 real-camera RF-DETR config.
+#
+# This uses the TensorRT engine requested for the current workspace and the
+# latest K1 d-robotics camera calibration found in local vision logs.
+
+camera:
+  type: d-robotics
+  use_intrin_from_topic: true
+  intrin:
+    fx: 208.262589
+    fy: 208.262589
+    cx: 269.148773
+    cy: 223.213867
+    distortion_model: 0
+    distortion_coeffs: []
+  extrin:
+    -
+      - 0.0061211451
+      - 0.011328253
+      - 0.99991709
+      - 0.00124231575
+    -
+      - -0.999975145
+      - -0.00344563532
+      - 0.00616053678
+      - 0.0455289222
+    -
+      - 0.00351513783
+      - -0.999929786
+      - 0.01130688
+      - -0.0158177298
+    -
+      - 0
+      - 0
+      - 0
+      - 1
+  pitch_compensation: 0
+  yaw_compensation: 0
+  z_compensation: 0
+
+topics:
+  color: /boostercamera/head/rgb
+  depth: /StereoNetNode/stereonet_depth
+
+detection_model:
+  type: rfdetr
+  model_path: ./src/vision/model/rfdetr_nano_384_fp16_opt.engine
+  confidence_threshold: 0.2
+  nms_threshold: 0.4
+  use_cuda_graph: true
+  classnames: [Ball, Goalpost, K1, LCross, TCross, XCross, PenaltyPoint]
+  post_process:
+    single_ball_assumption: false
+    confidence_thresholds:
+      Ball: 0.4
+      Goalpost: 0.4
+      K1: 0.4
+      LCross: 0.3
+      TCross: 0.3
+      XCross: 0.3
+      PenaltyPoint: 0.3
+
+use_depth: false
+
+ball_pose_estimator:
+  use_depth: false
+  radius: 0.109
+  down_sample_leaf_size: 0.01
+  cluster_distance_threshold: 0.01
+  fitting_distance_threshold: 0.01
+  minimum_cluster_size: 150
+  filter_distance: 1.2
+  check_ball_height: true
+
+human_like_pose_estimator:
+  use_depth: false
+  down_sample_leaf_size: 0.01
+  fitting_distance_threshold: 0.01
+  statistic_outlier_multiplier: 0.01
+
+field_marker_pose_estimator:
+  refine: false
+  line_segment_area_threshold: 75
+
+calibration:
+  sync_max_time_diff_ms: 1400
+  offset:
+    exclude_distance: 2.0
+    zero_translation: true
+    field_marker_path: ./src/vision/config/field.yaml
+  handeye:
+    calibration_time: 2026-01-30-16-16-15
+    reprojection_error: 0.89105241286115155
+
+misc:
+  save_data_nonstationary: true

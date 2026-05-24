@@ -227,6 +227,12 @@ void VisionNode::Init(const std::string &cfg_template_path, const std::string &c
         color_topic = "/camera/camera/color/image_raw";
         depth_topic = "/camera/camera/aligned_depth_to_color/image_raw";
     }
+    if (node["topics"]) {
+        color_topic = as_or<std::string>(node["topics"]["color"], color_topic);
+        depth_topic = as_or<std::string>(node["topics"]["depth"], depth_topic);
+    }
+    std::cout << "color_topic: " << color_topic << std::endl;
+    std::cout << "depth_topic: " << depth_topic << std::endl;
 
     callback_group_sub_1_ = this->create_callback_group(rclcpp::CallbackGroupType::MutuallyExclusive);
     callback_group_sub_2_ = this->create_callback_group(rclcpp::CallbackGroupType::MutuallyExclusive);
@@ -389,7 +395,11 @@ void VisionNode::ProcessData(SyncedDataBlock &synced_data, vision_interface::msg
     for (auto &detection : filtered_detections) {
         vision_interface::msg::DetectedObject detection_obj;
 
-        detection.class_name = detector_->kClassLabels[detection.class_id];
+        if (detection.class_id < 0 || detection.class_id >= static_cast<int>(classnames_.size())) {
+            std::cerr << "skip detection with invalid class_id: " << detection.class_id << std::endl;
+            continue;
+        }
+        detection.class_name = classnames_[detection.class_id];
 
         auto pose_estimator = get_estimator(detection.class_name);
         Pose pose_obj_by_color = pose_estimator->EstimateByColor(p_eye2base, detection, color);

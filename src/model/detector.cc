@@ -4,6 +4,7 @@
 #include <filesystem>
 
 #include "booster_vision/model/trt/impl.h"
+#include "booster_vision/model/trt/rfdetr_impl.h"
 #ifdef ENABLE_ONNX
 #include "booster_vision/model/onnx/detection_impl.h"
 #endif
@@ -14,21 +15,33 @@ const std::vector<std::string> YoloV8Detector::kClassLabels{"Ball", "Goalpost", 
                                                             "TCross", "XCross", "PenaltyPoint", "Opponent", "BRMarker"};
 
 std::shared_ptr<YoloV8Detector> YoloV8Detector::CreateYoloV8Detector(const YAML::Node &node, const std::string model_path_override) {
-    try {        
+    try {
         std::string model_path = model_path_override.empty() ? node["model_path"].as<std::string>() : model_path_override;
         float conf_thresh = node["confidence_threshold"].as<float>();
         float nms_thresh = node["nms_threshold"].as<float>();
+        std::string model_type = node["type"] ? node["type"].as<std::string>() : std::string("yolo");
 
         std::shared_ptr<YoloV8Detector> detector_ptr = nullptr;
-        #ifdef ENABLE_ONNX
-        if (model_path.find(".onnx") != std::string::npos) {
-            detector_ptr = std::shared_ptr<YoloV8Detector>(new YoloV8DetectorONNX(model_path));
+        if (model_type == "rfdetr") {
+            auto* p = new RFDetrDetectorTRT(model_path);
+            // Optional: use CUDA graphs if the caller explicitly asks. Off by
+            // default (hurts tail latency on desktop GPUs with clock gating;
+            // turn on for Jetson via config `detection_model.use_cuda_graph: true`).
+            if (node["use_cuda_graph"] && node["use_cuda_graph"].as<bool>(false)) {
+                p->EnableCudaGraph(true);
+            }
+            detector_ptr = std::shared_ptr<YoloV8Detector>(p);
         } else {
+            #ifdef ENABLE_ONNX
+            if (model_path.find(".onnx") != std::string::npos) {
+                detector_ptr = std::shared_ptr<YoloV8Detector>(new YoloV8DetectorONNX(model_path));
+            } else {
+                detector_ptr = std::shared_ptr<YoloV8Detector>(new YoloV8DetectorTRT(model_path));
+            }
+            #else
             detector_ptr = std::shared_ptr<YoloV8Detector>(new YoloV8DetectorTRT(model_path));
+            #endif
         }
-        #else
-        detector_ptr = std::shared_ptr<YoloV8Detector>(new YoloV8DetectorTRT(model_path));
-        #endif
         if (detector_ptr) {
             detector_ptr->setConfidenceThreshold(conf_thresh);
             detector_ptr->setNMSThreshold(nms_thresh);

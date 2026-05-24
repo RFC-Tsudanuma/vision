@@ -17,16 +17,29 @@ from launch_ros.substitutions import FindPackageShare
 def handle_configuration(context, *args, **kwargs):
     default_config_path = PathJoinSubstitution([FindPackageShare('vision'), 'config']).perform(context)
 
+    user_cfg_file = LaunchConfiguration('vision_config_file').perform(context)
     user_cfg_dir = LaunchConfiguration('vision_config_path').perform(context)
     config_path = default_config_path 
-    if user_cfg_dir and user_cfg_dir.strip():
+    if user_cfg_file and user_cfg_file.strip():
+        cand = user_cfg_file.strip()
+        if os.path.exists(cand):
+            config_file = cand
+            config_local_file = ''
+        else:
+            print(f"[vision launch] warning: {cand} not found, fallback to package config")
+            config_file = os.path.join(config_path, 'vision.yaml')
+            config_local_file = os.path.join(config_path, 'vision_local.yaml')
+    elif user_cfg_dir and user_cfg_dir.strip():
         cand = user_cfg_dir.rstrip('/')
         if os.path.exists(os.path.join(cand, 'vision.yaml')):
             config_path = cand
         else:
             print(f"[vision launch] warning: {cand}/vision.yaml not found, fallback to {default_config_path}")
-    config_file = os.path.join(config_path, 'vision.yaml')
-    config_local_file = os.path.join(config_path, 'vision_local.yaml')
+        config_file = os.path.join(config_path, 'vision.yaml')
+        config_local_file = os.path.join(config_path, 'vision_local.yaml')
+    else:
+        config_file = os.path.join(config_path, 'vision.yaml')
+        config_local_file = os.path.join(config_path, 'vision_local.yaml')
 
     show_det = LaunchConfiguration('show_det')
     show_seg = LaunchConfiguration('show_seg')
@@ -65,6 +78,11 @@ def generate_launch_description():
             'vision_config_path',
             default_value='',
             description='Optional directory containing vision.yaml & vision_local.yaml (empty => use package default)'
+        ),
+        DeclareLaunchArgument(
+            'vision_config_file',
+            default_value='',
+            description='Optional YAML file to use as the full vision config (overrides vision_config_path)'
         ),
         DeclareLaunchArgument(
             "offline_mode",
