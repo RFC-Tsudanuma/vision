@@ -2,6 +2,16 @@
 
 YOLOv8-based object detection for RoboCup Humanoid Soccer using NVIDIA TensorRT.
 
+## Quick start
+
+```bash
+colcon build --packages-up-to vision --cmake-args -DCMAKE_BUILD_TYPE=Release
+```
+
+```bash
+ros2 launch vision launch.py   vision_config_file:=/home/booster/Workspace/rfc_tsudanuma/src/ros2_ws/src/vision/config/k1_rfdetr_vision.yaml   camera_type:=d-robotics
+```
+
 ## License
 
 Apache-2.0
